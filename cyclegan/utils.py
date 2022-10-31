@@ -1,23 +1,31 @@
 """
 Some codes from https://github.com/Newmu/dcgan_code
 """
-
+import os
+import cv2
 import yaml
+import random
 from functools import partial
 
 import tensorflow as tf
 import numpy as np
 import albumentations
-import digitalpathology.generator.batch.simplesampler as sampler
+
+
+IMG_TYPE = 'jpg'
+IMG_SIZE = (512, 512)
+
 
 def get_config_from_yaml(config_path):
     with open(file=config_path, mode='r') as param_file:
         parameters = yaml.load(stream=param_file)
     return parameters['model'], parameters['sampler'], parameters['training']
 
+
 def get_generator_from_config(sampler_param, data_config_path, albumentations_path, batch_size):
     transforms = albumentations.load(albumentations_path, data_format='yaml')
     try:
+        import digitalpathology.generator.batch.simplesampler as sampler
         source_sampler = sampler.SimpleSampler(patch_source_filepath=data_config_path,
                                                **sampler_param['training'],
                                                partition='source')
@@ -25,12 +33,54 @@ def get_generator_from_config(sampler_param, data_config_path, albumentations_pa
                                                **sampler_param['training'],
                                                partition='target')
     except:
-        NotImplementedError("The original implementation uses an internal patch sampling library "
-                            "that is not publically available")
+        source_sampler = SimpleSampler(
+            patch_source_filepath=data_config_path, 
+            partition='source')
+        source_sampler = SimpleSampler(
+            patch_source_filepath=data_config_path, 
+            partition='target')
 
     generator = TFDataGenerator(source_sampler, target_sampler, transforms,
                                 batch_size=batch_size)
     return generator
+
+
+class SimpleSampler:
+    def __init__(self, patch_source_filepath, partition, shuffle=True, 
+                 img_type=IMG_TYPE, img_size=IMG_SIZE, crop=True) -> None:
+        self._path_base = os.path.join(patch_source_filepath, partition)
+        self._n_read = 0
+        self._shuffle = shuffle
+        self._img_size = img_size
+        self._crop = crop
+        self._img_paths = [os.path.join(self._path_base, elem) for elem 
+                           in os.listdir(self._path_base) if elem.endswith(img_type)]
+
+    def __getitem__(self, index):
+        img = cv2.imread(self._img_paths[index])
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
+        if self._crop:
+            img = self._crop(img)
+
+        self._n_read += 1
+        if (self._n_read == len(self._img_paths)) and self._shuffle:
+            random.shuffle(self._img_paths)
+            self._n_read = 0
+
+        return img
+            
+    def crop_img(self, img):
+        idx_start_x = np.random.randint(
+            img.shape[0] - self._img_size[0])
+        idx_start_y = np.random.randint(
+            img.shape[1] - self._img_size[1])
+        img = img[idx_start_x:idx_start_x + self._img_size[0],
+                  idx_start_y:idx_start_y + self._img_size[1],
+                  :]
+
+        return img
+
 
 class TFDataGenerator(tf.keras.utils.Sequence):
     def __init__(self, source, target, augmentations_pipeline=None, batch_size=8):
@@ -61,8 +111,8 @@ class TFDataGenerator(tf.keras.utils.Sequence):
         self._target.reset_sampler_indices()
 
     def _preprocess_batch(self, index):
-        source = np.zeros((self.batch_size, self._source.shape[0], self._source.shape[1], 3), dtype=np.float32)
-        target = np.zeros((self.batch_size, self._source.shape[0], self._source.shape[1], 3), dtype=np.float32)
+        source = np.zeros((self.batch_size, IMG_SIZE[0], IMG_SIZE[1], 3), dtype=np.float32)
+        target = np.zeros((self.batch_size, IMG_SIZE[0], IMG_SIZE[1], 3), dtype=np.float32)
 
         patch_ind = index * self.batch_size
         for ind, i in enumerate(range(patch_ind, patch_ind + self.batch_size)):
@@ -74,6 +124,4 @@ class TFDataGenerator(tf.keras.utils.Sequence):
             source[ind] = patch / 127.5 - 1
             target[ind] = patch_t / 127.5 - 1
         return source, target
-
-
 
