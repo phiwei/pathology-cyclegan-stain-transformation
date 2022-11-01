@@ -55,6 +55,8 @@ class SimpleSampler:
         self._crop = crop
         self._img_paths = [os.path.join(self._path_base, elem) for elem 
                            in os.listdir(self._path_base) if elem.endswith(img_type)]
+        if shuffle:
+            random.shuffle(self._img_paths)
 
     def __getitem__(self, index):
         img = cv2.imread(self._img_paths[index])
@@ -67,6 +69,8 @@ class SimpleSampler:
         if (self._n_read == len(self._img_paths)) and self._shuffle:
             random.shuffle(self._img_paths)
             self._n_read = 0
+
+        img = img.astype(float)/255
 
         return img
             
@@ -86,8 +90,6 @@ class TFDataGenerator(tf.keras.utils.Sequence):
     def __init__(self, source, target, augmentations_pipeline=None, batch_size=8):
         self._source = source
         self._target = target
-        self._source.step()
-        self._target.step()
         if augmentations_pipeline:
             self._aug_fn = partial(self.augment_fn, transform=augmentations_pipeline)
         else:
@@ -121,7 +123,39 @@ class TFDataGenerator(tf.keras.utils.Sequence):
             if self._aug_fn:
                 patch = self._aug_fn(patch)
                 patch_t= self._aug_fn(patch_t)
-            source[ind] = patch / 127.5 - 1
-            target[ind] = patch_t / 127.5 - 1
+
         return source, target
 
+
+class TFPredictionGenerator(tf.keras.utils.Sequence):
+    def __init__(self, img_paths, batch_size=8):
+        self._img_paths = img_paths
+        self.batch_size = batch_size
+
+    def __getitem__(self, index):
+        source, target = self._preprocess_batch(index)
+        return source, target
+
+    def __len__(self):
+        return self._source._iterations // self.batch_size
+
+    def augment_fn(self, patch, transform):
+        transformed = transform(image=patch)
+        return transformed["image"]
+
+    def on_epoch_end(self):
+        self._source.reset_sampler_indices()
+        self._target.reset_sampler_indices()
+
+    def _preprocess_batch(self, index):
+
+
+        patch_ind = index * self.batch_size
+        for ind, i in enumerate(range(patch_ind, patch_ind + self.batch_size)):
+            patch, _, _ = self._source[i]
+            patch_t, _, _= self._target[i]
+            if self._aug_fn:
+                patch = self._aug_fn(patch)
+                patch_t= self._aug_fn(patch_t)
+
+        return source, target
