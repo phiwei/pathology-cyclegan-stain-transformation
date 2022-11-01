@@ -59,31 +59,39 @@ class SimpleSampler:
             random.shuffle(self._img_paths)
 
     def __getitem__(self, index):
-        img = cv2.imread(self._img_paths[index])
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        
+
+        img = load_image(self._img_paths[index])
+
         if self._crop:
-            img = self._crop(img)
+            img = crop_img(img, IMG_SIZE)
 
         self._n_read += 1
         if (self._n_read == len(self._img_paths)) and self._shuffle:
             random.shuffle(self._img_paths)
             self._n_read = 0
 
+        return img
+
+
+def crop_img(img, output_size):
+    idx_start_x = np.random.randint(
+        img.shape[0] - output_size[0])
+    idx_start_y = np.random.randint(
+        img.shape[1] - output_size[1])
+    img = img[idx_start_x:idx_start_x + output_size[0],
+                idx_start_y:idx_start_y + output_size[1],
+                :]
+    return img
+
+
+def load_image(img_path):
+    img = cv2.imread(img_path)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    if np.max(img)>1:
         img = img.astype(float)/255
-
-        return img
-            
-    def crop_img(self, img):
-        idx_start_x = np.random.randint(
-            img.shape[0] - self._img_size[0])
-        idx_start_y = np.random.randint(
-            img.shape[1] - self._img_size[1])
-        img = img[idx_start_x:idx_start_x + self._img_size[0],
-                  idx_start_y:idx_start_y + self._img_size[1],
-                  :]
-
-        return img
+    
+    return img
 
 
 class TFDataGenerator(tf.keras.utils.Sequence):
@@ -108,10 +116,6 @@ class TFDataGenerator(tf.keras.utils.Sequence):
         transformed = transform(image=patch)
         return transformed["image"]
 
-    def on_epoch_end(self):
-        self._source.reset_sampler_indices()
-        self._target.reset_sampler_indices()
-
     def _preprocess_batch(self, index):
         source = np.zeros((self.batch_size, IMG_SIZE[0], IMG_SIZE[1], 3), dtype=np.float32)
         target = np.zeros((self.batch_size, IMG_SIZE[0], IMG_SIZE[1], 3), dtype=np.float32)
@@ -123,39 +127,22 @@ class TFDataGenerator(tf.keras.utils.Sequence):
             if self._aug_fn:
                 patch = self._aug_fn(patch)
                 patch_t= self._aug_fn(patch_t)
+            source[ind] = patch
+            target[ind] = patch_t
 
         return source, target
 
 
 class TFPredictionGenerator(tf.keras.utils.Sequence):
-    def __init__(self, img_paths, batch_size=8):
+    def __init__(self, img_paths):
         self._img_paths = img_paths
-        self.batch_size = batch_size
 
     def __getitem__(self, index):
-        source, target = self._preprocess_batch(index)
-        return source, target
+        img = load_image(self._img_paths[index])
+        # Add empty batch dimension
+        img = np.expand_dims(img, axis=0)
+        return img
 
     def __len__(self):
-        return self._source._iterations // self.batch_size
+        return len(self._img_paths)
 
-    def augment_fn(self, patch, transform):
-        transformed = transform(image=patch)
-        return transformed["image"]
-
-    def on_epoch_end(self):
-        self._source.reset_sampler_indices()
-        self._target.reset_sampler_indices()
-
-    def _preprocess_batch(self, index):
-
-
-        patch_ind = index * self.batch_size
-        for ind, i in enumerate(range(patch_ind, patch_ind + self.batch_size)):
-            patch, _, _ = self._source[i]
-            patch_t, _, _= self._target[i]
-            if self._aug_fn:
-                patch = self._aug_fn(patch)
-                patch_t= self._aug_fn(patch_t)
-
-        return source, target
