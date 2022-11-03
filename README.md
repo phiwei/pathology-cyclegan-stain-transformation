@@ -1,8 +1,6 @@
 # pathology-cyclegan-stain-transformation
 
-We provide our code that was used in the paper ['Residual cyclegan for robust domain transformation of histopathological tissue slides'](https://pubmed.ncbi.nlm.nih.gov/33647784/). The paper builds further on the original [CycleGAN](https://github.com/junyanz/CycleGAN) approach. Our method is specifically created for transferring between stain domains in digital histopathology. Some examples are shown below:
-
-<img src='imgs/examples.jpg' align="center" width=480>
+This repository implements the model described in ['Residual cyclegan for robust domain transformation of histopathological tissue slides'](https://pubmed.ncbi.nlm.nih.gov/33647784/). The paper builds further on the original [CycleGAN](https://github.com/junyanz/CycleGAN) approach. 
 
 The original repository does not provide all necessary internal functions to train a residual cycle GAN. In this repository, I am adding these functions to enable model training and prediction. 
 
@@ -11,3 +9,5 @@ The purpose of this implementation is two-fold:
 2. To transform tiles between the IHC and H&E domain at full resolution. 
 
 The tissue detection pipeline will be fully developed using training data from the ACROBAT challenge (https://acrobat.grand-challenge.org/). 
+
+<img src='imgs/examples.jpg' align="center" width=480>
