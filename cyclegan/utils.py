@@ -46,13 +46,12 @@ def get_generator_from_config(sampler_param, data_config_path, albumentations_pa
 
 
 class SimpleSampler:
-    def __init__(self, patch_source_filepath, partition, shuffle=True, 
-                 img_type=IMG_TYPE, img_size=IMG_SIZE, crop=True) -> None:
+    def __init__(self, patch_source_filepath, partition, 
+                 shuffle=True, img_type='jpg') -> None:
         self._path_base = os.path.join(patch_source_filepath, partition)
         self._n_read = 0
         self._shuffle = shuffle
-        self._img_size = img_size
-        self._crop = crop
+
         self._img_paths = [os.path.join(self._path_base, elem) for elem 
                            in os.listdir(self._path_base) if elem.endswith(img_type)]
         if shuffle:
@@ -62,9 +61,6 @@ class SimpleSampler:
 
         img = load_image(self._img_paths[index])
 
-        if self._crop:
-            img = crop_img(img, IMG_SIZE)
-
         self._n_read += 1
         if (self._n_read == len(self._img_paths)) and self._shuffle:
             random.shuffle(self._img_paths)
@@ -73,18 +69,8 @@ class SimpleSampler:
         return img
 
 
-def crop_img(img, output_size):
-    idx_start_x = np.random.randint(
-        img.shape[0] - output_size[0])
-    idx_start_y = np.random.randint(
-        img.shape[1] - output_size[1])
-    img = img[idx_start_x:idx_start_x + output_size[0],
-                idx_start_y:idx_start_y + output_size[1],
-                :]
-    return img
-
-
 def load_image(img_path):
+    assert os.path.exists(img_path)
     img = cv2.imread(img_path)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
@@ -117,8 +103,6 @@ class TFDataGenerator(tf.keras.utils.Sequence):
         return transformed["image"]
 
     def _preprocess_batch(self, index):
-        source = np.zeros((self.batch_size, IMG_SIZE[0], IMG_SIZE[1], 3), dtype=np.float32)
-        target = np.zeros((self.batch_size, IMG_SIZE[0], IMG_SIZE[1], 3), dtype=np.float32)
 
         patch_ind = index * self.batch_size
         for ind, i in enumerate(range(patch_ind, patch_ind + self.batch_size)):
@@ -127,6 +111,9 @@ class TFDataGenerator(tf.keras.utils.Sequence):
             if self._aug_fn:
                 patch = self._aug_fn(patch)
                 patch_t= self._aug_fn(patch_t)
+            if ind == 0:
+                source = np.zeros((self.batch_size, patch.shape[0], patch.shape[1], 3), dtype=np.float32)
+                target = np.zeros((self.batch_size, patch.shape[0], patch.shape[1], 3), dtype=np.float32)
             source[ind] = patch
             target[ind] = patch_t
 
