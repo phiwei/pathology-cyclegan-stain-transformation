@@ -91,7 +91,7 @@ class TFDataGenerator(tf.keras.utils.Sequence):
         return source, target
 
     def __len__(self):
-        return len(self._source) // self.batch_size
+        return np.min([len(self._source), len(self._target)]) // self.batch_size
 
     def augment_fn(self, patch, transform):
         transformed = transform(image=patch)
