@@ -100,13 +100,23 @@ class TFDataGenerator(tf.keras.utils.Sequence):
             patch = self._source[i]
             patch_t = self._target[i]
             if self._aug_fn:
-                patch = self._aug_fn(patch)
-                patch_t= self._aug_fn(patch_t)
+                mean_val = 255
+                n_loop = 0
+                while (mean_val > 225) & (n_loop < 10):
+                    patch_out = self._aug_fn(patch)
+                    mean_val = np.mean(patch_out)
+                    n_loop += 1
+                mean_val = 255
+                n_loop = 0
+                while (mean_val > 225) & (n_loop < 10):
+                    patch_t_out = self._aug_fn(patch_t)
+                    mean_val = np.mean(patch_t_out)
+                    n_loop += 1
             if ind == 0:
                 source = np.zeros((self.batch_size, patch.shape[0], patch.shape[1], 3), dtype=np.float32)
                 target = np.zeros((self.batch_size, patch.shape[0], patch.shape[1], 3), dtype=np.float32)
-            source[ind] = patch / 127.5 - 1
-            target[ind] = patch_t / 127.5 - 1
+            source[ind] = patch_out / 127.5 - 1
+            target[ind] = patch_t_out / 127.5 - 1
 
         return source, target
 
