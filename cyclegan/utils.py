@@ -98,8 +98,8 @@ class TFDataGenerator(tf.keras.utils.Sequence):
 
         patch_ind = index * self.batch_size
         for ind, i in enumerate(range(patch_ind, patch_ind + self.batch_size)):
-            patch, _, _ = self._source[i]
-            patch_t, _, _= self._target[i]
+            patch = self._source[i]
+            patch_t = self._target[i]
             if self._aug_fn:
                 patch = self._aug_fn(patch)
                 patch_t= self._aug_fn(patch_t)
