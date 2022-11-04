@@ -18,7 +18,6 @@ class trainer(object):
         self.albumentations_path = args['albumentations_path']
 
 
-
     def setup_network(self):
         """Train cyclegan"""
         self._create_save_dirs()
@@ -105,7 +104,6 @@ class trainer(object):
         os.makedirs(checkpoint_dir, exist_ok=True)
         os.makedirs(sample_dir, exist_ok=True)
         shutil.copyfile(self.param_file_path, os.path.join(config_dir, os.path.basename(self.param_file_path)))
-        shutil.copyfile(self.data_file_path, os.path.join(config_dir, os.path.basename(self.data_file_path)))
 
     def _get_scheduler(self, learning_rate, decay_epoch):
         def scheduler(epoch, lr):
