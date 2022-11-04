@@ -1,7 +1,5 @@
 import argparse
-import os
 from cyclegan.trainer import trainer
-import yaml
 
 def collect_arguments():
     parser = argparse.ArgumentParser(description='')

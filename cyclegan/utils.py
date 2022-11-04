@@ -19,26 +19,18 @@ IMG_SIZE = (512, 512)
 def get_config_from_yaml(config_path):
     with open(file=config_path, mode='r') as param_file:
         parameters = yaml.load(stream=param_file)
-    return parameters['model'], parameters['sampler'], parameters['training']
+    return parameters['model'], parameters['training']
 
 
-def get_generator_from_config(sampler_param, data_config_path, albumentations_path, batch_size):
+def get_generator_from_config(data_config_path, albumentations_path, batch_size):
     transforms = albumentations.load(albumentations_path, data_format='yaml')
-    try:
-        import digitalpathology.generator.batch.simplesampler as sampler
-        source_sampler = sampler.SimpleSampler(patch_source_filepath=data_config_path,
-                                               **sampler_param['training'],
-                                               partition='source')
-        target_sampler = sampler.SimpleSampler(patch_source_filepath=data_config_path,
-                                               **sampler_param['training'],
-                                               partition='target')
-    except:
-        source_sampler = SimpleSampler(
-            patch_source_filepath=data_config_path, 
-            partition='source')
-        source_sampler = SimpleSampler(
-            patch_source_filepath=data_config_path, 
-            partition='target')
+
+    source_sampler = SimpleSampler(
+        patch_source_filepath=data_config_path, 
+        partition='source')
+    target_sampler = SimpleSampler(
+        patch_source_filepath=data_config_path, 
+        partition='target')
 
     generator = TFDataGenerator(source_sampler, target_sampler, transforms,
                                 batch_size=batch_size)

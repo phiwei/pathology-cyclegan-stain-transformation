@@ -14,7 +14,7 @@ class trainer(object):
         self.sample_dir = os.path.join(self.output_dir, self.run_name, 'samples')
         self.data_file_path = args['data_file_path']
         self.param_file_path = args['param_file_path']
-        self.model_param, self.sampler_param, self.training_param = get_config_from_yaml(self.param_file_path)
+        self.model_param, self.training_param = get_config_from_yaml(self.param_file_path)
         self.albumentations_path = args['albumentations_path']
 
 
@@ -77,8 +77,7 @@ class trainer(object):
 
     def train_network(self):
         start_time = time.time()
-        generator = get_generator_from_config(self.sampler_param,
-                                              data_config_path=self.data_file_path,
+        generator = get_generator_from_config(data_config_path=self.data_file_path,
                                               albumentations_path=self.albumentations_path,
                                               batch_size=self.training_param['batch_size'])
 
