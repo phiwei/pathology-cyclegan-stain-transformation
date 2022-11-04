@@ -68,10 +68,6 @@ def load_image(img_path):
     assert os.path.exists(img_path)
     img = cv2.imread(img_path)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    if np.max(img)>1:
-        img = img.astype(np.float32)/255
-    
     return img
 
 
@@ -109,8 +105,8 @@ class TFDataGenerator(tf.keras.utils.Sequence):
             if ind == 0:
                 source = np.zeros((self.batch_size, patch.shape[0], patch.shape[1], 3), dtype=np.float32)
                 target = np.zeros((self.batch_size, patch.shape[0], patch.shape[1], 3), dtype=np.float32)
-            source[ind] = patch
-            target[ind] = patch_t
+            source[ind] = patch / 127.5 - 1
+            target[ind] = patch_t / 127.5 - 1
 
         return source, target
 
@@ -123,7 +119,7 @@ class TFPredictionGenerator(tf.keras.utils.Sequence):
         img = load_image(self._img_paths[index])
         # Add empty batch dimension
         img = np.expand_dims(img, axis=0)
-        return img
+        return img / 127.5 - 1
 
     def __len__(self):
         return len(self._img_paths)
