@@ -60,6 +60,9 @@ class SimpleSampler:
 
         return img
 
+    def __len__(self):
+        return len(self._img_paths)
+
 
 def load_image(img_path):
     assert os.path.exists(img_path)
@@ -88,7 +91,7 @@ class TFDataGenerator(tf.keras.utils.Sequence):
         return source, target
 
     def __len__(self):
-        return self._source._iterations // self.batch_size
+        return len(self._source) // self.batch_size
 
     def augment_fn(self, patch, transform):
         transformed = transform(image=patch)
