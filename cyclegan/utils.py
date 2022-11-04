@@ -67,7 +67,7 @@ def load_image(img_path):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     if np.max(img)>1:
-        img = img.astype(float)/255
+        img = img.astype(np.float32)/255
     
     return img
 
