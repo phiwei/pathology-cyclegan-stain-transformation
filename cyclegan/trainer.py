@@ -23,7 +23,7 @@ class trainer(object):
         self._create_save_dirs()
 
         devices = tf.config.list_physical_devices('GPU')
-        mirrored_strategy = tf.distribute.MirroredStrategy(devices=devices)
+        mirrored_strategy = tf.distribute.MirroredStrategy()
         with mirrored_strategy.scope():
 
             adv_loss_fn = tf.keras.losses.MeanSquaredError()
