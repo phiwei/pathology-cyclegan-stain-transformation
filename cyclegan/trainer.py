@@ -22,55 +22,58 @@ class trainer(object):
         """Train cyclegan"""
         self._create_save_dirs()
 
+        devices = tf.config.list_physical_devices('GPU')
+        mirrored_strategy = tf.distribute.MirroredStrategy(devices=devices)
+        with mirrored_strategy.scope():
 
-        adv_loss_fn = tf.keras.losses.MeanSquaredError()
+            adv_loss_fn = tf.keras.losses.MeanSquaredError()
 
-        # Define the loss function for the generators
-        def generator_loss_fn(fake):
-            fake_loss = adv_loss_fn(tf.ones_like(fake), fake)
-            return fake_loss
+            # Define the loss function for the generators
+            def generator_loss_fn(fake):
+                fake_loss = adv_loss_fn(tf.ones_like(fake), fake)
+                return fake_loss
 
-        # Define the loss function for the discriminators
-        def discriminator_loss_fn(real, fake):
-            real_loss = adv_loss_fn(tf.ones_like(real), real)
-            fake_loss = adv_loss_fn(tf.zeros_like(fake), fake)
-            return (real_loss + fake_loss) * 0.5
+            # Define the loss function for the discriminators
+            def discriminator_loss_fn(real, fake):
+                real_loss = adv_loss_fn(tf.ones_like(real), real)
+                fake_loss = adv_loss_fn(tf.zeros_like(fake), fake)
+                return (real_loss + fake_loss) * 0.5
 
-        # Get the generators
-        gen_G = get_unet_generator(input_shape=(None, None, 3),
-                                   residual=self.model_param['residual'],
-                                   filter_growth=self.model_param['filter_growth'],
-                                   depth=self.model_param['depth'],
-                                   name = "generator_G")
-        gen_F = get_unet_generator(input_shape=(None, None, 3),
-                                   residual=self.model_param['residual'],
-                                   filter_growth=self.model_param['filter_growth'],
-                                   depth=self.model_param['depth'],
-                                   name="generator_F")
+            # Get the generators
+            gen_G = get_unet_generator(input_shape=(None, None, 3),
+                                    residual=self.model_param['residual'],
+                                    filter_growth=self.model_param['filter_growth'],
+                                    depth=self.model_param['depth'],
+                                    name = "generator_G")
+            gen_F = get_unet_generator(input_shape=(None, None, 3),
+                                    residual=self.model_param['residual'],
+                                    filter_growth=self.model_param['filter_growth'],
+                                    depth=self.model_param['depth'],
+                                    name="generator_F")
 
-        # Get the discriminators
-        disc_X = get_discriminator(input_shape=(None, None, 3),
-                                   filters=self.model_param['disc_filters'],
-                                   name="discriminator_X")
-        disc_Y = get_discriminator(input_shape=(None, None, 3),
-                                   filters=self.model_param['disc_filters'],
-                                   name="discriminator_Y")
+            # Get the discriminators
+            disc_X = get_discriminator(input_shape=(None, None, 3),
+                                    filters=self.model_param['disc_filters'],
+                                    name="discriminator_X")
+            disc_Y = get_discriminator(input_shape=(None, None, 3),
+                                    filters=self.model_param['disc_filters'],
+                                    name="discriminator_Y")
 
-        cycle_gan_model = CycleGan(
-            generator_G=gen_G, generator_F=gen_F, discriminator_X=disc_X, discriminator_Y=disc_Y,
-            l_cycle=self.training_param['cycle_lambda'],
-            l_ssim=self.training_param['ssim_lambda'],
-            l_id=self.training_param['id_lambda']
-        )
+            cycle_gan_model = CycleGan(
+                generator_G=gen_G, generator_F=gen_F, discriminator_X=disc_X, discriminator_Y=disc_Y,
+                l_cycle=self.training_param['cycle_lambda'],
+                l_ssim=self.training_param['ssim_lambda'],
+                l_id=self.training_param['id_lambda']
+            )
 
-        cycle_gan_model.compile(
-            gen_G_optimizer=tf.keras.optimizers.Adam(learning_rate=self.training_param['learning_rate'], beta_1=0.5),
-            gen_F_optimizer=tf.keras.optimizers.Adam(learning_rate=self.training_param['learning_rate'], beta_1=0.5),
-            disc_X_optimizer=tf.keras.optimizers.Adam(learning_rate=self.training_param['learning_rate'], beta_1=0.5),
-            disc_Y_optimizer=tf.keras.optimizers.Adam(learning_rate=self.training_param['learning_rate'], beta_1=0.5),
-            gen_loss_fn=generator_loss_fn,
-            disc_loss_fn=discriminator_loss_fn
-        )
+            cycle_gan_model.compile(
+                gen_G_optimizer=tf.keras.optimizers.Adam(learning_rate=self.training_param['learning_rate'], beta_1=0.5),
+                gen_F_optimizer=tf.keras.optimizers.Adam(learning_rate=self.training_param['learning_rate'], beta_1=0.5),
+                disc_X_optimizer=tf.keras.optimizers.Adam(learning_rate=self.training_param['learning_rate'], beta_1=0.5),
+                disc_Y_optimizer=tf.keras.optimizers.Adam(learning_rate=self.training_param['learning_rate'], beta_1=0.5),
+                gen_loss_fn=generator_loss_fn,
+                disc_loss_fn=discriminator_loss_fn
+            )
 
         self._cycle_gan_model = cycle_gan_model
 
