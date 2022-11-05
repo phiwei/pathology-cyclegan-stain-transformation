@@ -5,7 +5,7 @@ model:
     disc_filters: 48
 
 training:
-    batch_size: 8
+    batch_size: 2
     learning_rate: 0.0002
     epochs: 200
     decay_epoch: 12
