@@ -5,10 +5,10 @@ model:
     disc_filters: 48
 
 training:
-    batch_size: 2
+    batch_size: 8
     learning_rate: 0.0002
-    epochs: 50
-    decay_epoch: 3
+    epochs: 200
+    decay_epoch: 12
     beta1: 0.5
     id_lambda: 0.5
     cycle_lambda: 5.0
