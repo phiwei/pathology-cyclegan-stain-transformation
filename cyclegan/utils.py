@@ -73,10 +73,10 @@ def load_image(img_path):
 
 class TFDataGenerator(tf.keras.utils.Sequence):
     def __init__(self, source, target, augmentations_pipeline=None, 
-        min_mean=200, batch_size=8):
+        max_mean=200, batch_size=8):
         self._source = source
         self._target = target
-        self._min_mean = min_mean
+        self._max_mean = max_mean
         if augmentations_pipeline:
             self._aug_fn = partial(self.augment_fn, transform=augmentations_pipeline)
         else:
@@ -104,13 +104,13 @@ class TFDataGenerator(tf.keras.utils.Sequence):
             if self._aug_fn:
                 mean_val = 255
                 n_loop = 0
-                while (mean_val > self.min_mean) & (n_loop < 10):
+                while (mean_val > self._max_mean) & (n_loop < 10):
                     patch_out = self._aug_fn(patch)
                     mean_val = np.mean(patch_out)
                     n_loop += 1
                 mean_val = 255
                 n_loop = 0
-                while (mean_val > self._min_mean) & (n_loop < 10):
+                while (mean_val > self._max_mean) & (n_loop < 10):
                     patch_t_out = self._aug_fn(patch_t)
                     mean_val = np.mean(patch_t_out)
                     n_loop += 1
