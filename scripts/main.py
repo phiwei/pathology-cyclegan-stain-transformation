@@ -1,4 +1,5 @@
 import argparse
+import datetime
 from cyclegan.trainer import trainer
 
 def collect_arguments():
@@ -13,6 +14,7 @@ def collect_arguments():
 
 if __name__ == '__main__':
     args = vars(collect_arguments())
+    args['output_dir'] += '-{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.datetime.now())
     trainer = trainer(args)
     trainer.setup_network()
     trainer.train_network()
