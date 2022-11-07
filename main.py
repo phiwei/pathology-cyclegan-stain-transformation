@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import tensorflow as tf
 from cyclegan.trainer import trainer
 
 def collect_arguments():
@@ -15,6 +16,10 @@ def collect_arguments():
 if __name__ == '__main__':
     args = vars(collect_arguments())
     args['run_name'] += '-{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.datetime.now())
+
+    policy = tf.keras.mixed_precision.Policy(policyConfig)
+    tf.keras.mixed_precision.set_global_policy(policy)
+
     trainer = trainer(args)
     trainer.setup_network()
     trainer.train_network()
