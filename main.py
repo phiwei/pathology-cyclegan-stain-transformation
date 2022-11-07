@@ -17,7 +17,7 @@ if __name__ == '__main__':
     args = vars(collect_arguments())
     args['run_name'] += '-{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.datetime.now())
 
-    policy = tf.keras.mixed_precision.Policy(policyConfig)
+    policy = tf.keras.mixed_precision.Policy('mixed_float16')
     tf.keras.mixed_precision.set_global_policy(policy)
 
     trainer = trainer(args)
